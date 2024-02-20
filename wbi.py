@@ -8,16 +8,16 @@ import base64
 import random
 
 os.environ['NO_PROXY'] = 'https://api.bilibili.com'
-req_headers = dict()
-req_headers['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0'
-req_headers['Referer'] = 'https://www.bilibili.com'
-req_headers['Accept-Encoding'] = 'utf-8'
-req_headers['Accept-Language'] = 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2'
-req_headers['Accept'] = 'application/json'
-req_headers['Cache-Control'] = 'no-cache'
-req_headers['Connection'] = 'keep-alive'
-req_headers['Origin'] = 'https://www.bilibili.com'
-req_headers['Pragma'] = 'no-cache'
+HEADERS = dict()
+HEADERS['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0'
+HEADERS['Referer'] = 'https://www.bilibili.com'
+HEADERS['Accept-Encoding'] = 'utf-8'
+HEADERS['Accept-Language'] = 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en;q=0.3,en-US;q=0.2'
+HEADERS['Accept'] = 'application/json'
+HEADERS['Cache-Control'] = 'no-cache'
+HEADERS['Connection'] = 'keep-alive'
+HEADERS['Origin'] = 'https://www.bilibili.com'
+HEADERS['Pragma'] = 'no-cache'
 
 mixinKeyEncTab = [
     46, 47, 18, 2, 53, 8, 23, 32, 15, 50, 10, 31, 58, 3, 45, 35, 27, 43, 5, 49,
@@ -33,7 +33,7 @@ websiteTagNames = [
 ]
 
 session = requests.session()
-cookies = session.get("https://bilibili.com", headers=req_headers).cookies
+cookies = session.get("https://bilibili.com", headers=HEADERS).cookies
 # b_3 = requests.get("https://api.bilibili.com/x/frontend/finger/spi", headers=req_headers).json()['data']['b_3']
 # cookies = {
 #     'buvid3': b_3,
@@ -68,7 +68,7 @@ def enc_wbi(params: dict, img_key: str, sub_key: str):
 
 
 def get_wbi_keys():
-    resp = requests.get('https://api.bilibili.com/x/web-interface/nav', headers=req_headers, cookies=cookies)
+    resp = requests.get('https://api.bilibili.com/x/web-interface/nav', headers=HEADERS, cookies=cookies)
     resp.raise_for_status()
     json_content = resp.json()
     img_url: str = json_content['data']['wbi_img']['img_url']
@@ -79,7 +79,7 @@ def get_wbi_keys():
 
 
 def get_access_spi():
-    resp = requests.get("https://api.bilibili.com/x/frontend/finger/spi", headers=req_headers)
+    resp = requests.get("https://api.bilibili.com/x/frontend/finger/spi", headers=HEADERS)
     json_content = resp.json()['data']
     return json_content['b_3'], json_content['b_4'], int(time.time())
 
@@ -106,7 +106,7 @@ def get_acc_info(mid: int):
     req_params['web_location'] = 1550101
     signed_params = get_wts_w_rid(req_params)
     print(urllib.parse.urlencode(signed_params))
-    response = requests.get(url=req_url, params=signed_params, headers=req_headers)
+    response = requests.get(url=req_url, params=signed_params, headers=HEADERS)
     return response
 
 
@@ -131,7 +131,7 @@ def get_search_acc(mid: int):
     # req_params['dm_cover_img_str'] = ''.join(random.sample('ABCDEFGHIJK', 2))
     # req_params['dm_img_inter'] = '{"ds":[{"t":2,"c":"Y2xlYXJmaXggZy1zZWFyY2ggc2VhcmNoLWNvbnRhaW5lcg","p":[1668,72,676],"s":[140,602,696]},{"t":2,"c":"c2VjdGlvbiB2aWRlbyBsb2FkaW5nIGZ1bGwtcm93cw","p":[749,9,1348],"s":[358,3100,2232]}],"wh":[339,113,113],"of":[246,492,246]}'
     signed_params = get_wts_w_rid(req_params)
-    response = requests.get(url=req_url, params=signed_params, headers=req_headers, cookies=cookies)
+    response = requests.get(url=req_url, params=signed_params, headers=HEADERS, cookies=cookies)
     return response
 
 
@@ -143,7 +143,7 @@ def get_user_cards(uids: str):
     req_params['platform'] = 'web'
     req_params['web_location'] = 1550101
     signed_params = get_wts_w_rid(req_params)
-    response = requests.get(url=req_url, params=signed_params, headers=req_headers)
+    response = requests.get(url=req_url, params=signed_params, headers=HEADERS)
     print(response)
     return response
 
@@ -156,7 +156,7 @@ def get_video_simple_info(bv_id: str):
     response = requests.get(
         url=req_url,
         params=signed_params,
-        headers=req_headers
+        headers=HEADERS
     )
     print(response.json())
     return response
@@ -176,7 +176,7 @@ def get_video_player_url(bv_id: str, cid: int):
     response = requests.get(
         url=req_url,
         params=signed_params,
-        headers=req_headers
+        headers=HEADERS
     )
     print(response.json())
     return response
@@ -190,7 +190,7 @@ def get_live_stream_danmu_info(room_id: int):
     response = requests.get(
         url=req_url,
         params=signed_params,
-        headers=req_headers
+        headers=HEADERS
     )
     print(response.json())
     return response
