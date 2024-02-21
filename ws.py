@@ -9,11 +9,17 @@ import wbi as API
 
 keep_alive = True
 connect_loop = asyncio.new_event_loop()
-heart_break_loop = asyncio.new_event_loop()
+heartbeat_loop = asyncio.new_event_loop()
 packet_count = 0
 
 
 class Packet:
+    # 包类型
+    PACKET_TYPE_NORMAL = 0
+    PACKET_TYPE_HEARTBEAT = 1
+    PACKET_TYPE_ZLIB = 2
+    PACKET_TYPE_BROTLI = 3
+
     def __init__(self, content: dict, type: int, oper_code: int, index: int):
         self.content = content
         self.type = type
@@ -53,7 +59,7 @@ async def __connect__(host: str, port: int, token: str, room_id: int):
         while keep_alive:
             response_bytes = await client.recv()
             response_packet = __parse__(response_bytes)
-            # print(response_packet.__str__())
+            print(response_packet)
 
 
 async def send_auth_packet(client, token, room_id):
@@ -79,13 +85,13 @@ def __heart_packet_loop__(client):
     heart_packet = Packet(content=empty, type=1, oper_code=2, index=packet_count)
     while keep_alive:
         time.sleep(30)
-        heart_break_loop.run_until_complete(
+        heartbeat_loop.run_until_complete(
             client.send(heart_packet.output())
         )
         # connect_loop.create_task(coro=client.send(heart_packet.data_form()))
 
 
-def __parse__(data: bytes) -> Packet:
+def __parse__(data: bytes) -> []:
     header_bytes = data[0:16]
     content_bytes = data[16:len(data)]
     packet_size = int.from_bytes(bytes=header_bytes[0:4], byteorder='big')
@@ -93,19 +99,27 @@ def __parse__(data: bytes) -> Packet:
     packet_type = int.from_bytes(bytes=header_bytes[6:8], byteorder='big')
     packet_oper_code = int.from_bytes(bytes=header_bytes[8:12], byteorder='big')
     packet_index = int.from_bytes(bytes=header_bytes[12:16], byteorder='big')
-    print('--------------')
-    print(header_bytes)
-    print(content_bytes)
-    packet_content = ''
     # 普通包需要解压
-    if packet_type == 2:
+    if packet_type == Packet.PACKET_TYPE_ZLIB:
         decompress = zlib.decompressobj()
         content_bytes = decompress.decompress(content_bytes)
-        packet_content = content_bytes.decode('utf-8', 'ignore')
-        print(packet_content)
-    elif packet_type == 3:
+    elif packet_type == Packet.PACKET_TYPE_BROTLI:
         content_bytes = brotli.decompress(content_bytes)
+    print(packet_type)
+    # packet_type == Packet.PACKET_COMPRESS_BROTLI时, 同个包里可能有多条信息，需要拆开
+    packet_list = []
+    offset = 0
+    if packet_type == Packet.PACKET_TYPE_BROTLI:
+        while offset < len(content_bytes):
+            sub_header_bytes = content_bytes[offset: offset + 16]
+            sub_packet_size = int.from_bytes(bytes=sub_header_bytes[0:4], byteorder='big')
+            sub_packet_bytes = content_bytes[offset + 16: offset + 16 + sub_packet_size]
+            sub_packet_content = sub_packet_bytes.decode('utf-8', 'ignore')
+            sub_packet_content = sub_packet_content[0: sub_packet_content.rindex('}')]
+            # print(sub_packet_content)
+            packet_list.append(sub_packet_content)
+            offset += sub_packet_size
+    else:
         packet_content = content_bytes.decode('utf-8', 'ignore')
-        print(packet_content)
-    print('--------------')
-    return Packet(content=json.loads(packet_content), type=packet_type, oper_code=packet_oper_code, index=packet_index)
+        packet_list.append(packet_content)
+    return packet_list
