@@ -3,7 +3,7 @@ import ws as WebsocketTools
 
 
 if __name__ == '__main__':
-    room_id = 11306
+    room_id = 47867
     data_json = API.get_live_stream_danmu_info(room_id).json()['data']
     info_json = data_json['host_list'][0]
     WebsocketTools.connect(

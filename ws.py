@@ -5,6 +5,7 @@ import time
 import brotli
 import zlib
 import websockets
+import threading
 import wbi as API
 
 keep_alive = True
@@ -56,10 +57,14 @@ async def __connect__(host: str, port: int, token: str, room_id: int):
         print('connect to wss server success')
         await send_auth_packet(client, token, room_id)
         # __heart_packet_loop__(client)
+        last_heartbeat_timestamp = int(time.time())
         while keep_alive:
             response_bytes = await client.recv()
             response_packet = __parse__(response_bytes)
             print(response_packet)
+            if int(time.time()) - last_heartbeat_timestamp > 25:
+                await __heart_packet__(client)
+                last_heartbeat_timestamp = int(time.time())
 
 
 async def send_auth_packet(client, token, room_id):
@@ -77,18 +82,12 @@ async def send_auth_packet(client, token, room_id):
     await client.send(auth_packet.output())
 
 
-def __heart_packet_loop__(client):
-    print('start heart break packet loop')
+async def __heart_packet__(client):
     empty = dict()
     global packet_count
     packet_count += 1
     heart_packet = Packet(content=empty, type=1, oper_code=2, index=packet_count)
-    while keep_alive:
-        time.sleep(30)
-        heartbeat_loop.run_until_complete(
-            client.send(heart_packet.output())
-        )
-        # connect_loop.create_task(coro=client.send(heart_packet.data_form()))
+    await client.send(heart_packet.output())
 
 
 def __parse__(data: bytes) -> []:
