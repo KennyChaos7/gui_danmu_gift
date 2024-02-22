@@ -2,6 +2,7 @@ import asyncio
 import ctypes
 import json
 import time
+from typing import List
 import brotli
 import zlib
 import websockets
@@ -101,11 +102,12 @@ async def __connect__(host: str, port: int, token: str, room_id: int, func):
             response_bytes = await client.recv()
             response_packet_list = __parse__(response_bytes)
             # 过滤信息
-            for (resp_packet) in response_packet_list:
+            for resp_packet in response_packet_list:
                 for filter_msg_type in DEFAULT_FILTER_MSG_TYPE:
                     if str(resp_packet).find(filter_msg_type) != -1:
                         # 弹幕
                         if str(resp_packet).find(Danmuku.DANMUKU_TYPE_DANMU_MSG):
+                            print(resp_packet)
                             resp_packet_json = json.loads(resp_packet)['info']
                             danmuku = Danmuku(
                                 from_uid=0,
@@ -149,7 +151,7 @@ async def __heart_packet__(client):
     await client.send(heart_packet.output())
 
 
-def __parse__(data: bytes) -> []:
+def __parse__(data: bytes) -> List[str]:
     header_bytes = data[0:16]
     content_bytes = data[16:len(data)]
     packet_size = int.from_bytes(bytes=header_bytes[0:4], byteorder='big')
@@ -168,15 +170,16 @@ def __parse__(data: bytes) -> []:
     offset = 0
     if packet_type == Packet.PACKET_TYPE_BROTLI:
         while offset < len(content_bytes):
-            sub_header_bytes = content_bytes[offset: offset + 16]
+            sub_header_size = int.from_bytes(content_bytes[offset + 4: offset + 6], byteorder='big')
+            sub_header_bytes = content_bytes[offset: offset + sub_header_size]
             sub_packet_size = int.from_bytes(bytes=sub_header_bytes[0:4], byteorder='big')
-            sub_packet_bytes = content_bytes[offset + 16: offset + 16 + sub_packet_size]
-            sub_packet_content = sub_packet_bytes.decode('utf-8', 'ignore')
-            sub_packet_content = sub_packet_content[0: sub_packet_content.rindex('}') + 1]
+            sub_packet_data_size = sub_packet_size - sub_header_size
+            sub_packet_data_bytes = content_bytes[offset + sub_header_size: offset + sub_packet_size]
+            sub_packet_content = sub_packet_data_bytes.decode('utf-8', 'ignore')
             packet_list.append(sub_packet_content)
             offset += sub_packet_size
     elif packet_type == Packet.PACKET_TYPE_HEARTBEAT:
-        packet_content = r"{'code':0}"
+        packet_content = r"{'code':1}"
         packet_list.append(packet_content)
     else:
         packet_content = content_bytes.decode('utf-8', 'ignore')
