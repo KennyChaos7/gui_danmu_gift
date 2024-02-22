@@ -8,11 +8,6 @@ import websockets
 import threading
 import wbi as API
 
-keep_alive = True
-connect_loop = asyncio.new_event_loop()
-heartbeat_loop = asyncio.new_event_loop()
-packet_count = 0
-
 
 class Packet:
     # 包类型
@@ -44,14 +39,47 @@ class Packet:
         return data_bytes
 
 
-def connect(host: str, port: int, token: str, room_id: int):
+class Danmuku:
+    # 消息内容信息
+    DANMUKU_TYPE_STOP_LIVE_ROOM_LIST = 'STOP_LIVE_ROOM_LIST'
+    DANMUKU_TYPE_WATCHED_CHANGE = 'WATCHED_CHANGE'
+    DANMUKU_TYPE_ONLINE_RANK_COUNT = 'ONLINE_RANK_COUNT'
+    DANMUKU_TYPE_ONLINE_RANK_V2 = 'ONLINE_RANK_V2'
+    DANMUKU_TYPE_INTERACT_WORD = 'INTERACT_WORD'
+    DANMUKU_TYPE_NOTICE_MSG = 'NOTICE_MSG'
+    DANMUKU_TYPE_DANMU_MSG = 'DANMU_MSG'
+    DANMUKU_TYPE_LIKE_INFO_V3_CLICK = 'LIKE_INFO_V3_CLICK'
+    DANMUKU_TYPE_POPULAR_RANK_CHANGED = 'POPULAR_RANK_CHANGED'
+
+    def __init__(self, from_uid: int,  from_nickname: str, from_timestamp: int, content: str, to_room_id: int):
+        # 未登录时没有uid
+        self.from_uid = from_uid
+        self.from_nickname = from_nickname
+        self.from_timestamp = from_timestamp
+        self.content = content
+        self.to_room_id = to_room_id
+
+    def __str__(self):
+        return f"{self.from_nickname}: {self.content}"
+
+
+keep_alive = True
+connect_loop = asyncio.new_event_loop()
+packet_count = 0
+DEFAULT_FILTER_MSG_TYPE = [Danmuku.DANMUKU_TYPE_DANMU_MSG, Danmuku.DANMUKU_TYPE_NOTICE_MSG]
+
+
+def connect(host: str, port: int, token: str, room_id: int, func, filter_msg_type_list: list = None):
     print(f"wss://{host}:{port}/sub")
+    global DEFAULT_FILTER_MSG_TYPE
+    if filter_msg_type_list is not None:
+        DEFAULT_FILTER_MSG_TYPE = filter_msg_type_list
     connect_loop.run_until_complete(
-        __connect__(host, port, token, room_id)
+        __connect__(host, port, token, room_id, func)
     )
 
 
-async def __connect__(host: str, port: int, token: str, room_id: int):
+async def __connect__(host: str, port: int, token: str, room_id: int, func):
     uri = f"wss://{host}:{port}/sub"
     async with websockets.connect(uri=uri, extra_headers=API.HEADERS) as client:
         print('connect to wss server success')
@@ -60,8 +88,20 @@ async def __connect__(host: str, port: int, token: str, room_id: int):
         last_heartbeat_timestamp = int(time.time())
         while keep_alive:
             response_bytes = await client.recv()
-            response_packet = __parse__(response_bytes)
-            print(response_packet)
+            response_packet_list = __parse__(response_bytes)
+            # 过滤信息
+            for (resp_packet) in response_packet_list:
+                for filter_msg_type in DEFAULT_FILTER_MSG_TYPE:
+                    if str(resp_packet).find(filter_msg_type) != -1:
+                        resp_packet_json = json.loads(resp_packet)['info']
+                        danmuku = Danmuku(
+                            from_uid=0,
+                            from_timestamp=resp_packet_json[0][4],
+                            from_nickname=resp_packet_json[2][1],
+                            content=resp_packet_json[1],
+                            to_room_id=room_id
+                        )
+                        func(danmuku)
             if int(time.time()) - last_heartbeat_timestamp > 25:
                 await __heart_packet__(client)
                 last_heartbeat_timestamp = int(time.time())
@@ -104,8 +144,7 @@ def __parse__(data: bytes) -> []:
         content_bytes = decompress.decompress(content_bytes)
     elif packet_type == Packet.PACKET_TYPE_BROTLI:
         content_bytes = brotli.decompress(content_bytes)
-    print(packet_type)
-    # packet_type == Packet.PACKET_COMPRESS_BROTLI时, 同个包里可能有多条信息，需要拆开
+    # packet_type == Danmuku.PACKET_COMPRESS_BROTLI时, 同个包里可能有多条信息，需要拆开
     packet_list = []
     offset = 0
     if packet_type == Packet.PACKET_TYPE_BROTLI:
@@ -114,10 +153,12 @@ def __parse__(data: bytes) -> []:
             sub_packet_size = int.from_bytes(bytes=sub_header_bytes[0:4], byteorder='big')
             sub_packet_bytes = content_bytes[offset + 16: offset + 16 + sub_packet_size]
             sub_packet_content = sub_packet_bytes.decode('utf-8', 'ignore')
-            sub_packet_content = sub_packet_content[0: sub_packet_content.rindex('}')]
-            # print(sub_packet_content)
+            sub_packet_content = sub_packet_content[0: sub_packet_content.rindex('}') + 1]
             packet_list.append(sub_packet_content)
             offset += sub_packet_size
+    elif packet_type == Packet.PACKET_TYPE_HEARTBEAT:
+        packet_content = r"{'code':0}"
+        packet_list.append(packet_content)
     else:
         packet_content = content_bytes.decode('utf-8', 'ignore')
         packet_list.append(packet_content)
