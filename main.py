@@ -1,4 +1,6 @@
+import datetime
 import threading
+import time
 from tkinter import StringVar, IntVar, Tk, ttk, Menu, Label, messagebox, Button
 
 import gui
@@ -16,8 +18,8 @@ WINDOW = GUI.create_window(
 )
 TREE_VIEW = GUI.create_tree_view(
     root=WINDOW,
-    column_titles=('昵称', '内容'),
-    column_widths=(100, 400)
+    column_titles=('时间', '昵称', '内容'),
+    column_widths=(80, 60, 350)
 )
 
 
@@ -25,7 +27,7 @@ def recv_from_ws_msg(packet: ws.Danmuku):
     print(packet)
     GUI.update_tree_view(
         tree_view=TREE_VIEW,
-        content=(packet.from_nickname, packet.content)
+        content=(datetime.datetime.fromtimestamp(int(time.time())).strftime("%H:%M:%S"), packet.from_nickname, packet.content)
     )
 
 
