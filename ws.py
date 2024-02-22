@@ -5,7 +5,6 @@ import time
 import brotli
 import zlib
 import websockets
-import threading
 import wbi as API
 
 
@@ -41,15 +40,27 @@ class Packet:
 
 class Danmuku:
     # 消息内容信息
+    # 以下几种为不常用类型
     DANMUKU_TYPE_STOP_LIVE_ROOM_LIST = 'STOP_LIVE_ROOM_LIST'
     DANMUKU_TYPE_WATCHED_CHANGE = 'WATCHED_CHANGE'
     DANMUKU_TYPE_ONLINE_RANK_COUNT = 'ONLINE_RANK_COUNT'
     DANMUKU_TYPE_ONLINE_RANK_V2 = 'ONLINE_RANK_V2'
     DANMUKU_TYPE_INTERACT_WORD = 'INTERACT_WORD'
-    DANMUKU_TYPE_NOTICE_MSG = 'NOTICE_MSG'
-    DANMUKU_TYPE_DANMU_MSG = 'DANMU_MSG'
     DANMUKU_TYPE_LIKE_INFO_V3_CLICK = 'LIKE_INFO_V3_CLICK'
     DANMUKU_TYPE_POPULAR_RANK_CHANGED = 'POPULAR_RANK_CHANGED'
+
+    # 通知消息
+    DANMUKU_TYPE_NOTICE_MSG = 'NOTICE_MSG'
+    # 弹幕
+    DANMUKU_TYPE_DANMU_MSG = 'DANMU_MSG'
+    # 醒目留言
+    DANMUKU_TYPE_SUPER_CHAT_MESSAGE = 'SUPER_CHAT_MESSAGE'
+    # 上舰通知
+    DANMUKU_TYPE_GUARD_BUY = 'GUARD_BUY'
+    # 礼物
+    DANMUKU_TYPE_SEND_GIFT = 'SEND_GIFT'
+    # 礼物连击
+    DANMUKU_TYPE_COMBO_SEND = 'COMBO_SEND'
 
     def __init__(self, from_uid: int,  from_nickname: str, from_timestamp: int, content: str, to_room_id: int):
         # 未登录时没有uid
@@ -66,7 +77,7 @@ class Danmuku:
 keep_alive = True
 connect_loop = asyncio.new_event_loop()
 packet_count = 0
-DEFAULT_FILTER_MSG_TYPE = [Danmuku.DANMUKU_TYPE_DANMU_MSG, Danmuku.DANMUKU_TYPE_NOTICE_MSG]
+DEFAULT_FILTER_MSG_TYPE = [Danmuku.DANMUKU_TYPE_DANMU_MSG]
 
 
 def connect(host: str, port: int, token: str, room_id: int, func, filter_msg_type_list: list = None):
@@ -93,15 +104,23 @@ async def __connect__(host: str, port: int, token: str, room_id: int, func):
             for (resp_packet) in response_packet_list:
                 for filter_msg_type in DEFAULT_FILTER_MSG_TYPE:
                     if str(resp_packet).find(filter_msg_type) != -1:
-                        resp_packet_json = json.loads(resp_packet)['info']
-                        danmuku = Danmuku(
-                            from_uid=0,
-                            from_timestamp=resp_packet_json[0][4],
-                            from_nickname=resp_packet_json[2][1],
-                            content=resp_packet_json[1],
-                            to_room_id=room_id
-                        )
-                        func(danmuku)
+                        # 弹幕
+                        if str(resp_packet).find(Danmuku.DANMUKU_TYPE_DANMU_MSG):
+                            resp_packet_json = json.loads(resp_packet)['info']
+                            danmuku = Danmuku(
+                                from_uid=0,
+                                from_timestamp=resp_packet_json[0][4],
+                                from_nickname=resp_packet_json[2][1],
+                                content=resp_packet_json[1],
+                                to_room_id=room_id
+                            )
+                            func(danmuku)
+                        # 通知消息
+                        # 弹幕
+                        # 醒目留言
+                        # 上舰通知
+                        # 礼物
+                        # 礼物连击
             if int(time.time()) - last_heartbeat_timestamp > 25:
                 await __heart_packet__(client)
                 last_heartbeat_timestamp = int(time.time())

@@ -12,7 +12,5 @@ requests==2.29.0
 schedule==1.2.0
 urllib3==1.26.17
 zipp==3.17.0
-Pillow==9.5.0
-ttkwidgets==0.13.0
-websockets=12.0.0
-brotli=1.1.0
+Brotli~=1.1.0
+websockets~=12.0
