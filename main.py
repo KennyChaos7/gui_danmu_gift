@@ -27,7 +27,11 @@ def recv_from_ws_msg(packet: ws.Danmuku):
     print(packet)
     GUI.update_tree_view(
         tree_view=TREE_VIEW,
-        content=(datetime.datetime.fromtimestamp(int(time.time())).strftime("%H:%M:%S"), packet.from_nickname, packet.content)
+        content=(
+            datetime.datetime.fromtimestamp(int(time.time())).strftime("%H:%M:%S"),
+            packet.from_nickname,
+            packet.content
+        )
     )
 
 
@@ -46,5 +50,6 @@ def __danmu_task(room_id: int):
 if __name__ == '__main__':
     room_id = 12962
     threading.Thread(target=__danmu_task, args=(room_id,)).start()
+    WINDOW.title(f"直播间: 【{room_id}】")
     WINDOW.mainloop()
 
