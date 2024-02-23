@@ -19,13 +19,13 @@ TREE_VIEW_DANMUKU = gui.create_tree_view(
 
 WINDOW_GIFT = gui.create_child_window(
     window_title='礼物',
-    width=600,
+    width=800,
     height=400
 )
 TREE_VIEW_GIFT = gui.create_checked_tree_view(
     root=WINDOW_GIFT,
     column_titles=('时间', '昵称', '礼物内容'),
-    column_widths=(120, 80, 400)
+    column_widths=(120, 80, 600)
 )
 
 
