@@ -34,7 +34,7 @@ websiteTagNames = [
 
 session = requests.session()
 cookies = session.get("https://bilibili.com", headers=HEADERS).cookies
-# b_3 = requests.get("https://api.bilibili.com/x/frontend/finger/spi", headers=req_headers).json()['data']['b_3']
+b_3 = requests.get("https://api.bilibili.com/x/frontend/finger/spi", headers=HEADERS).json()['data']['b_3']
 # cookies = {
 #     'buvid3': b_3,
 #     'buvid4': b_4

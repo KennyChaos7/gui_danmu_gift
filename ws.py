@@ -204,7 +204,7 @@ def __compose_message__(response_packet_list, room_id, func):
                         from_uid=resp_packet_json['uid'],
                         from_timestamp=resp_packet_json['start_time'],
                         from_nickname=resp_packet_json['user_info']['uname'],
-                        content=resp_packet_json['message'],
+                        content=f" SC -> 【{resp_packet_json['message']}】 ",
                         to_room_id=room_id,
                         msg_type=Message.TYPE_GIFT
                     )
