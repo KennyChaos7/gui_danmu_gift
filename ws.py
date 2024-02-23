@@ -27,17 +27,17 @@ class Packet:
     CMD_TYPE_POPULAR_RANK_CHANGED = 'POPULAR_RANK_CHANGED'
 
     # 通知消息
-    CMD_TYPE_NOTICE_MSG = 'NOTICE_MSG'
+    CMD_TYPE_NOTICE_MSG = r'"cmd":"NOTICE_MSG"'
     # 弹幕
-    CMD_TYPE_DANMU_MSG = 'DANMU_MSG'
+    CMD_TYPE_DANMU_MSG = r'"cmd":"DANMU_MSG"'
     # 醒目留言
-    CMD_TYPE_SUPER_CHAT_MESSAGE = 'SUPER_CHAT_MESSAGE'
+    CMD_TYPE_SUPER_CHAT_MESSAGE = r'"cmd":"SUPER_CHAT_MESSAGE"'
     # 上舰通知
-    CMD_TYPE_GUARD_BUY = 'GUARD_BUY'
+    CMD_TYPE_GUARD_BUY = r'"cmd":"GUARD_BUY"'
     # 礼物
-    CMD_TYPE_SEND_GIFT = 'SEND_GIFT'
+    CMD_TYPE_SEND_GIFT = r'"cmd":"SEND_GIFT"'
     # 礼物连击
-    CMD_TYPE_COMBO_SEND = 'COMBO_SEND'
+    CMD_TYPE_COMBO_SEND = r'"cmd":"COMBO_SEND"'
 
     def __init__(self, content: dict, type: int, oper_code: int, index: int):
         self.content = content
