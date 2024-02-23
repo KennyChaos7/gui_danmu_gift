@@ -16,6 +16,29 @@ class Packet:
     PACKET_TYPE_ZLIB = 2
     PACKET_TYPE_BROTLI = 3
 
+    # cmd内容信息
+    # 以下几种为不常用类型
+    CMD_TYPE_STOP_LIVE_ROOM_LIST = 'STOP_LIVE_ROOM_LIST'
+    CMD_TYPE_WATCHED_CHANGE = 'WATCHED_CHANGE'
+    CMD_TYPE_ONLINE_RANK_COUNT = 'ONLINE_RANK_COUNT'
+    CMD_TYPE_ONLINE_RANK_V2 = 'ONLINE_RANK_V2'
+    CMD_TYPE_INTERACT_WORD = 'INTERACT_WORD'
+    CMD_TYPE_LIKE_INFO_V3_CLICK = 'LIKE_INFO_V3_CLICK'
+    CMD_TYPE_POPULAR_RANK_CHANGED = 'POPULAR_RANK_CHANGED'
+
+    # 通知消息
+    CMD_TYPE_NOTICE_MSG = 'NOTICE_MSG'
+    # 弹幕
+    CMD_TYPE_DANMU_MSG = 'DANMU_MSG'
+    # 醒目留言
+    CMD_TYPE_SUPER_CHAT_MESSAGE = 'SUPER_CHAT_MESSAGE'
+    # 上舰通知
+    CMD_TYPE_GUARD_BUY = 'GUARD_BUY'
+    # 礼物
+    CMD_TYPE_SEND_GIFT = 'SEND_GIFT'
+    # 礼物连击
+    CMD_TYPE_COMBO_SEND = 'COMBO_SEND'
+
     def __init__(self, content: dict, type: int, oper_code: int, index: int):
         self.content = content
         self.type = type
@@ -39,37 +62,23 @@ class Packet:
         return data_bytes
 
 
-class Danmuku:
-    # 消息内容信息
-    # 以下几种为不常用类型
-    DANMUKU_TYPE_STOP_LIVE_ROOM_LIST = 'STOP_LIVE_ROOM_LIST'
-    DANMUKU_TYPE_WATCHED_CHANGE = 'WATCHED_CHANGE'
-    DANMUKU_TYPE_ONLINE_RANK_COUNT = 'ONLINE_RANK_COUNT'
-    DANMUKU_TYPE_ONLINE_RANK_V2 = 'ONLINE_RANK_V2'
-    DANMUKU_TYPE_INTERACT_WORD = 'INTERACT_WORD'
-    DANMUKU_TYPE_LIKE_INFO_V3_CLICK = 'LIKE_INFO_V3_CLICK'
-    DANMUKU_TYPE_POPULAR_RANK_CHANGED = 'POPULAR_RANK_CHANGED'
-
-    # 通知消息
-    DANMUKU_TYPE_NOTICE_MSG = 'NOTICE_MSG'
+class Message:
+    # 消息类型
     # 弹幕
-    DANMUKU_TYPE_DANMU_MSG = 'DANMU_MSG'
-    # 醒目留言
-    DANMUKU_TYPE_SUPER_CHAT_MESSAGE = 'SUPER_CHAT_MESSAGE'
-    # 上舰通知
-    DANMUKU_TYPE_GUARD_BUY = 'GUARD_BUY'
-    # 礼物
-    DANMUKU_TYPE_SEND_GIFT = 'SEND_GIFT'
-    # 礼物连击
-    DANMUKU_TYPE_COMBO_SEND = 'COMBO_SEND'
+    TYPE_DANMUKU = 'DANMUKU'
+    # 礼物，包含cmd中醒目留言，上舰通知，礼物
+    TYPE_GIFT = 'GIFT'
+    # 通知
+    TYPE_NOTICE = 'NOTICE'
 
-    def __init__(self, from_uid: int,  from_nickname: str, from_timestamp: int, content: str, to_room_id: int):
+    def __init__(self, from_uid: int,  from_nickname: str, from_timestamp: int, content: str, to_room_id: int, msg_type: str):
         # 未登录时没有uid
         self.from_uid = from_uid
         self.from_nickname = from_nickname
         self.from_timestamp = from_timestamp
         self.content = content
         self.to_room_id = to_room_id
+        self.msg_type = msg_type
 
     def __str__(self):
         return f"{self.from_nickname}: {self.content}"
@@ -78,7 +87,8 @@ class Danmuku:
 keep_alive = True
 connect_loop = asyncio.new_event_loop()
 packet_count = 0
-DEFAULT_FILTER_MSG_TYPE = [Danmuku.DANMUKU_TYPE_DANMU_MSG]
+DEFAULT_FILTER_MSG_TYPE = [Packet.CMD_TYPE_DANMU_MSG, Packet.CMD_TYPE_SEND_GIFT,
+                           Packet.CMD_TYPE_GUARD_BUY, Packet.CMD_TYPE_SUPER_CHAT_MESSAGE]
 
 
 def connect(host: str, port: int, token: str, room_id: int, func, filter_msg_type_list: list = None):
@@ -106,22 +116,59 @@ async def __connect__(host: str, port: int, token: str, room_id: int, func):
                 for filter_msg_type in DEFAULT_FILTER_MSG_TYPE:
                     if str(resp_packet).find(filter_msg_type) != -1:
                         # 弹幕
-                        if str(resp_packet).find(Danmuku.DANMUKU_TYPE_DANMU_MSG):
-                            print(resp_packet)
+                        if str(resp_packet).find(Packet.CMD_TYPE_DANMU_MSG) != -1:
+                            #and str(resp_packet).find('info')
+                            # print(resp_packet)
                             resp_packet_json = json.loads(resp_packet)['info']
-                            danmuku = Danmuku(
+                            msg = Message(
                                 from_uid=0,
                                 from_timestamp=resp_packet_json[0][4],
                                 from_nickname=resp_packet_json[2][1],
                                 content=resp_packet_json[1],
-                                to_room_id=room_id
+                                to_room_id=room_id,
+                                msg_type=Message.TYPE_DANMUKU
                             )
-                            func(danmuku)
+                            func(msg)
                         # 通知消息
-                        # 弹幕
                         # 醒目留言
+                        if str(resp_packet).find(Packet.CMD_TYPE_SUPER_CHAT_MESSAGE) != -1:
+                            print(resp_packet)
+                            resp_packet_json = json.loads(resp_packet)['data']
+                            msg = Message(
+                                from_uid=resp_packet_json['uid'],
+                                from_timestamp=resp_packet_json['start_time'],
+                                from_nickname=resp_packet_json['user_info']['uname'],
+                                content=resp_packet_json['message'],
+                                to_room_id=room_id,
+                                msg_type=Message.TYPE_GIFT
+                            )
+                            func(msg)
                         # 上舰通知
+                        if str(resp_packet).find(Packet.CMD_TYPE_GUARD_BUY) != -1:
+                            print(resp_packet)
+                            resp_packet_json = json.loads(resp_packet)['data']
+                            msg = Message(
+                                from_uid=resp_packet_json['uid'],
+                                from_timestamp=resp_packet_json['start_time'],
+                                from_nickname=resp_packet_json['username'],
+                                content=f"{resp_packet_json['gift_name']} x {resp_packet_json['num']}",
+                                to_room_id=room_id,
+                                msg_type=Message.TYPE_GIFT
+                            )
+                            func(msg)
                         # 礼物
+                        if str(resp_packet).find(Packet.CMD_TYPE_SEND_GIFT) != -1:
+                            print(resp_packet)
+                            resp_packet_json = json.loads(resp_packet)['data']
+                            msg = Message(
+                                from_uid=resp_packet_json['uid'],
+                                from_timestamp=int(resp_packet_json['rnd'][0:-9]),
+                                from_nickname=resp_packet_json['uname'],
+                                content=f"{resp_packet_json['giftName']} x {resp_packet_json['num']}",
+                                to_room_id=room_id,
+                                msg_type=Message.TYPE_GIFT
+                            )
+                            func(msg)
                         # 礼物连击
             if int(time.time()) - last_heartbeat_timestamp > 25:
                 await __heart_packet__(client)
@@ -136,7 +183,7 @@ async def send_auth_packet(client, token, room_id):
     auth_packet_content['protover'] = 3
     auth_packet_content['platform'] = 'web'
     auth_packet_content['type'] = 7
-    auth_packet_content['buvid'] = API.cookies['buvid3']
+    # auth_packet_content['buvid'] = API.cookies['buvid3']
     global packet_count
     packet_count += 1
     auth_packet = Packet(content=auth_packet_content, type=1, oper_code=7, index=packet_count)
