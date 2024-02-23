@@ -14,10 +14,10 @@ WINDOW_DANMUKU = gui.create_window(
 TREE_VIEW_DANMUKU = gui.create_tree_view(
     root=WINDOW_DANMUKU,
     column_titles=('时间', '昵称', '内容'),
-    column_widths=(80, 60, 350)
+    column_widths=(80, 80, 330)
 )
 
-WINDOW_GIFT = gui.create_window(
+WINDOW_GIFT = gui.create_child_window(
     window_title='礼物',
     width=600,
     height=400
@@ -25,7 +25,7 @@ WINDOW_GIFT = gui.create_window(
 TREE_VIEW_GIFT = gui.create_checked_tree_view(
     root=WINDOW_GIFT,
     column_titles=('时间', '昵称', '礼物内容'),
-    column_widths=(70, 80, 450)
+    column_widths=(120, 80, 400)
 )
 
 
@@ -59,9 +59,10 @@ def __connect_task(room_id: int):
         func=__recv_msg,
     )
     WINDOW_DANMUKU.title(f"直播间: 【{room_id}】")
+    WINDOW_DANMUKU.mainloop()
 
 
 if __name__ == '__main__':
-    room_id = 26966466
+    room_id = 21281833
     threading.Thread(target=__connect_task, args=(room_id,)).start()
-    WINDOW_DANMUKU.mainloop()
+    WINDOW_GIFT.mainloop()
