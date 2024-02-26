@@ -5,30 +5,6 @@ import wbi as API
 import ws as WebsocketTools
 import gui
 
-is_first_packet = True
-WINDOW_DANMUKU = gui.create_window(
-    window_title='弹幕',
-    width=500,
-    height=250
-)
-FRAME_VIEW_DANMUKU, TREE_VIEW_DANMUKU = gui.create_tree_view(
-    root=WINDOW_DANMUKU,
-    column_titles=('时间', '昵称', '内容'),
-    column_widths=(80, 80, 330)
-)
-
-WINDOW_GIFT = gui.create_child_window(
-    window_title='礼物',
-    width=800,
-    height=400
-)
-FRAME_VIEW_GIFT, TREE_VIEW_GIFT = gui.create_checked_tree_view(
-    root=WINDOW_GIFT,
-    column_titles=('时间', '昵称', '礼物内容'),
-    column_widths=(120, 80, 600)
-)
-thread_conn = threading.Thread()#threading.Thread(target=__connect_task, args=(room_id,))
-
 
 def __recv_msg(msg: WebsocketTools.Message):
     print(msg)
@@ -69,6 +45,29 @@ def __after_input(entry_get: str):
     threading.Thread(target=__connect_task, args=(int(entry_get),)).start()
 
 
+WINDOW_DANMUKU = gui.create_window(
+    window_title='弹幕',
+    width=500,
+    height=250
+)
+FRAME_VIEW_DANMUKU, TREE_VIEW_DANMUKU = gui.create_tree_view(
+    root=WINDOW_DANMUKU,
+    column_titles=('时间', '昵称', '内容'),
+    column_widths=(80, 80, 330)
+)
+
+WINDOW_GIFT = gui.create_child_window(
+    window_title='礼物',
+    width=800,
+    height=400
+)
+FRAME_VIEW_GIFT, TREE_VIEW_GIFT = gui.create_checked_tree_view(
+    root=WINDOW_GIFT,
+    column_titles=('时间', '昵称', '礼物内容'),
+    column_widths=(120, 80, 600)
+)
+
+
 FRAME_INPUT_VIEW = gui.create_input_view(
     root=WINDOW_DANMUKU,
     input_tint="输入room id",
@@ -90,5 +89,4 @@ if __name__ == '__main__':
 
     FRAME_VIEW_DANMUKU.pack_forget()
     WINDOW_DANMUKU.mainloop()
-    # thread_conn.start()
 

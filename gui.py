@@ -86,7 +86,3 @@ def create_input_view(root: Tk, input_tint: str, func_confirm_click):
     button.pack()
     frame.pack(fill='both', expand=True)
     return frame
-
-
-def EMPTY_FRAME_VAR(root: Tk) -> Frame:
-    return Frame(root)

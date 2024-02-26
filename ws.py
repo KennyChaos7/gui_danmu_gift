@@ -6,6 +6,7 @@ from typing import List
 import brotli
 import zlib
 import websockets
+import os
 import wbi as API
 
 
@@ -89,6 +90,18 @@ connect_loop = asyncio.new_event_loop()
 packet_count = 0
 DEFAULT_FILTER_MSG_TYPE = [Packet.CMD_TYPE_DANMU_MSG, Packet.CMD_TYPE_SEND_GIFT,
                            Packet.CMD_TYPE_GUARD_BUY, Packet.CMD_TYPE_SUPER_CHAT_MESSAGE]
+# 读取目录下的cookie文件
+with open(os.getcwd() + '/cookie.json', mode='r') as file:
+    json_file = json.load(file)
+    print(json_file)
+    if json_file['dedeuserid'] != "":
+        UID = int(json_file['dedeuserid'])
+    else:
+        UID = 0
+    if json_file['buvid3'] != "":
+        Buvid3 = json_file['buvid3']
+    else:
+        Buvid3 = ''
 
 
 def connect(host: str, port: int, token: str, room_id: int, func, filter_msg_type_list: list = None):
@@ -119,13 +132,13 @@ async def __connect__(host: str, port: int, token: str, room_id: int, func):
 
 async def send_auth_packet(client, token, room_id):
     auth_packet_content = dict()
-    auth_packet_content['uid'] = 0
+    # auth_packet_content['uid'] = UID
     auth_packet_content['roomid'] = room_id
     auth_packet_content['key'] = token
     auth_packet_content['protover'] = 3
     auth_packet_content['platform'] = 'web'
-    auth_packet_content['type'] = 7
-    # auth_packet_content['buvid'] = API.cookies['buvid3']
+    auth_packet_content['type'] = 2
+    # auth_packet_content['buvid'] = Buvid3
     global packet_count
     packet_count += 1
     auth_packet = Packet(content=auth_packet_content, type=1, oper_code=7, index=packet_count)
