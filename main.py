@@ -11,7 +11,7 @@ WINDOW_DANMUKU = gui.create_window(
     width=500,
     height=250
 )
-TREE_VIEW_DANMUKU = gui.create_tree_view(
+FRAME_VIEW_DANMUKU, TREE_VIEW_DANMUKU = gui.create_tree_view(
     root=WINDOW_DANMUKU,
     column_titles=('时间', '昵称', '内容'),
     column_widths=(80, 80, 330)
@@ -22,11 +22,12 @@ WINDOW_GIFT = gui.create_child_window(
     width=800,
     height=400
 )
-TREE_VIEW_GIFT = gui.create_checked_tree_view(
+FRAME_VIEW_GIFT, TREE_VIEW_GIFT = gui.create_checked_tree_view(
     root=WINDOW_GIFT,
     column_titles=('时间', '昵称', '礼物内容'),
     column_widths=(120, 80, 600)
 )
+thread_conn = threading.Thread()#threading.Thread(target=__connect_task, args=(room_id,))
 
 
 def __recv_msg(msg: WebsocketTools.Message):
@@ -58,11 +59,36 @@ def __connect_task(room_id: int):
         room_id=room_id,
         func=__recv_msg,
     )
-    WINDOW_DANMUKU.title(f"直播间: 【{room_id}】")
-    WINDOW_DANMUKU.mainloop()
+    WINDOW_GIFT.mainloop()
+
+
+def __after_input(entry_get: str):
+    FRAME_INPUT_VIEW.pack_forget()
+    WINDOW_DANMUKU.title(f"直播间: 【{entry_get}】")
+    FRAME_VIEW_DANMUKU.pack(fill='both', expand=True)
+    threading.Thread(target=__connect_task, args=(int(entry_get),)).start()
+
+
+FRAME_INPUT_VIEW = gui.create_input_view(
+    root=WINDOW_DANMUKU,
+    input_tint="输入room id",
+    func_confirm_click=__after_input
+)
 
 
 if __name__ == '__main__':
-    room_id = 21281833
-    threading.Thread(target=__connect_task, args=(room_id,)).start()
-    WINDOW_GIFT.mainloop()
+
+    # 例如输入参数填入room_id
+    # room_id = 1
+    # try:
+    #     args, _ = getopt.getopt(sys.argv[1:], "n:")
+    # except:
+    #     print("need room_id args, using '-n xxx'")
+    # for name, arg in args:
+    #     if name in ['-n']:
+    #         room_id = int(arg)
+
+    FRAME_VIEW_DANMUKU.pack_forget()
+    WINDOW_DANMUKU.mainloop()
+    # thread_conn.start()
+
