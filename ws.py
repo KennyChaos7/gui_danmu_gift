@@ -91,18 +91,18 @@ packet_count = 0
 DEFAULT_FILTER_MSG_TYPE = [Packet.CMD_TYPE_DANMU_MSG, Packet.CMD_TYPE_SEND_GIFT,
                            Packet.CMD_TYPE_GUARD_BUY, Packet.CMD_TYPE_SUPER_CHAT_MESSAGE]
 # 读取目录下的cookie文件
-with open(os.getcwd() + '/cookie.json', mode='r') as file:
-    json_file = json.load(file)
-    print(json_file)
-    if json_file['dedeuserid'] != "":
-        UID = int(json_file['dedeuserid'])
-    else:
-        UID = 0
-    if json_file['buvid3'] != "":
-        Buvid3 = json_file['buvid3']
-    else:
-        Buvid3 = ''
-
+if os.path.exists(os.getcwd() + '/cookie.json'):
+    with open(os.getcwd() + '/cookie.json', mode='r') as file:
+        json_file = json.load(file)
+        print(json_file)
+        if json_file['dedeuserid'] != "":
+            UID = int(json_file['dedeuserid'])
+        else:
+            UID = 0
+        if json_file['buvid3'] != "":
+            Buvid3 = json_file['buvid3']
+        else:
+            Buvid3 = ''
 
 def connect(host: str, port: int, token: str, room_id: int, func, filter_msg_type_list: list = None):
     print(f"wss://{host}:{port}/sub")
